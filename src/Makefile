@@ -38,8 +38,8 @@ DEFS = -DHAVE_CONFIG_H
 CPPFLAGS = 
 LDFLAGS = 
 LIBS =    -L../lib/lib -L../lib/libmisc -lipfix -lmisc -lpcap
-#CCOPT = -Wall -g -m32
-CCOPT = -Wall -g 
+CCOPT = -Wall -g -m32
+#CCOPT = -Wall -g 
 INCLS = -I. -I.. -I../lib -I../libmisc
 CFLAGS = $(CCOPT) $(INCLS) $(DEFS)
 
