@@ -1,4 +1,5 @@
-CC = cc
+#CC = cc
+CC = cc -m32
 CFLAGS = -g -Wall -I.. -I../lib -I../libmisc\
          -DDBSUPPORT -DSCTPSUPPORT  # -I/usr/local/include
 LDFLAGS = -L../lib -L../libmisc -lipfix -lmisc \
