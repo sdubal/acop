@@ -250,13 +250,13 @@ int export_peer_node_arp_data(acPeerNode_t *peer_node)
         uint16_t portId;
     }__attribute__((packed))arpData;
 
-
+    //return 0;
     //lets update to local export data structure
     arpData.srcIp = (uint32_t)peer_node->key.srcIp.addr.v4addr;  
     arpData.dstIp = (uint32_t)peer_node->key.peerIp.addr.v4addr;
     arpData.vlanId = (uint16_t)peer_node->key.vlanId;
     arpData.direction = 0;  //Not updated in DB
-    arpData.protocol = 806;//peer_node->key.protocol;
+    arpData.protocol = 0x806; //peer_node->key.protocol;
     arpData.portId = peer_node->key.portId;
 
     /** export some data

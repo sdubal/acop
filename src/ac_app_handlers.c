@@ -14,7 +14,7 @@
 #include "../include/ac_database.h"
 #include "../include/ac_app_defs.h"
 #include "../include/ac_app_api.h"
-
+#include <time.h>
 acAppHandlers_t appProtoHandlers[] =
 {
     { AC_APP_ARP_INDEX, AC_APP_ARP_ID, acAppArpPktHandler},
@@ -24,7 +24,7 @@ acAppHandlers_t appProtoHandlers[] =
     //HEY...! do not add any handlers below this line. LAST One...
     { AC_MAX_APP_INDEX, 0x000, NULL} //This should be the last one.
 };
-
+#define ARP_RATE_CALC_DURATION 10
 
 extern int export_peer_node_arp_data(acPeerNode_t *);
     
@@ -41,7 +41,7 @@ acAppArpPktHandler (acPeerNode_t *peerNode, acAppParser_t *parser_data)
     /*todo arp data should be of paticular format. */
     acAppParser_t       *app = parser_data;    /* This will be filled by parser of the papplication packet. */
     acAppArpProtInfo_t  *arpInfo = &peerNode->data.arp;
-    time_t               time;
+    time_t               t_sec;
     uint32_t             delta;
 
     if (!peerNode || !parser_data) {
@@ -57,8 +57,19 @@ acAppArpPktHandler (acPeerNode_t *peerNode, acAppParser_t *parser_data)
     if (app->direction == 0) { //TODO: RX
         arpInfo->rxPktByteCnt += app->pktSz;
         arpInfo->rxPktCnt++;
-    
-        delta = time - arpInfo->lastPktRcvdTime;
+
+        arpInfo->rxPktRate_cnt++;
+        t_sec = time(NULL);
+        delta = t_sec - (arpInfo->lastPktRcvdTime);
+        printf("delta = %x, pktRate = %x, count %x\n", 
+                delta, arpInfo->rxPktRate, arpInfo->rxPktRate_cnt);
+        if (delta > ARP_RATE_CALC_DURATION) {
+            arpInfo->rxPktRate = arpInfo->rxPktRate_cnt/delta;
+            printf("ARP pkt rate %d\n", arpInfo->rxPktRate);
+            arpInfo->rxPktRate_cnt = 0;
+            arpInfo->lastPktRcvdTime  = t_sec;
+        }
+#if 0
         if ((delta < arpInfo->minRxDelta) || !(arpInfo->minRxDelta)) {
             arpInfo->minRxDelta = delta;
         } else if (delta > arpInfo->minRxDelta) {
@@ -66,6 +77,7 @@ acAppArpPktHandler (acPeerNode_t *peerNode, acAppParser_t *parser_data)
         }
         delta = time - arpInfo->lastPktRcvdTime;
         arpInfo->lastPktRcvdTime = time;
+#endif       
     } else {
         arpInfo->txPktByteCnt += app->pktSz;
         arpInfo->txPktCnt++;
@@ -155,6 +167,7 @@ acAppPktHandler(acPeerTblKey_t *pktInfoKey,  acAppParser_t *data)
 {
     void             *peerNode = NULL;
     uint32_t          index = 0;
+    time_t t;
 
     printf("%s: index:%d, appId:0x%x func:%p\n", __func__, 
             index, pktInfoKey->appId, appProtoHandlers[index].func);
@@ -174,6 +187,7 @@ acAppPktHandler(acPeerTblKey_t *pktInfoKey,  acAppParser_t *data)
         peerNode = acPeerTblEntryFind(pktInfoKey);
         if (peerNode == NULL) {
             peerNode = acPeerTblEntryCreate(pktInfoKey);
+            ((acPeerNode_t *) peerNode)->data.arp.lastPktRcvdTime = time(&t);
             export_peer_node_arp_data(peerNode);
         }
 

@@ -35,6 +35,8 @@ typedef struct acPeerTblKey_s {
 typedef struct acAppParsed_s {
     acPeerTblKey_t  key; //This should be the first one..
     uchar8_t        direction;
+    uchar8_t         dmac[6];
+    uchar8_t         smac[6];
     uint32_t        pktSz;
  
 }acAppParser_t;
