@@ -1,5 +1,5 @@
 #CC = cc
-CC = cc -m32
+CC = cc ${ARCH}
 CFLAGS = -g -Wall -I.. -I../lib -I../libmisc\
          -DDBSUPPORT -DSCTPSUPPORT  # -I/usr/local/include
 LDFLAGS = -L../lib -L../libmisc -lipfix -lmisc \

@@ -18,11 +18,12 @@
 
 extern acReturn_t
 acAppPktHandler(acPeerTblKey_t *pktInfoKey,  acAppParser_t *data);
+char dev[20]; 
+extern int acopp_ipfix_init(int, char **);
 
 int main(int argc, char **argv)
 {
     int i;
-    char *dev; 
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t* descr;
     const u_char *packet;
@@ -35,18 +36,15 @@ int main(int argc, char **argv)
     /* grab a device to peak into... */
     // dev = pcap_lookupdev(errbuf);
     printf("Total data  argc %d\n", argc);
-    if (argc < 2){
-        printf("You must enter input interface \n");
-        return (0);
-    }
-
+    acopp_ipfix_init(argc, argv);
+#if 0
     dev = argv[1];
     if (dev == NULL)
     {
         printf("%s\n",errbuf);
         exit(1);
     }
-
+#endif 
     printf("DEV: %s\n",dev);
 
     descr = pcap_open_live(dev,BUFSIZ,0,-1,errbuf);
@@ -57,7 +55,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-
+    
     /*
      * grab a packet from descr (yay!)                    
      * u_char *pcap_next(pcap_t *p,struct pcap_pkthdr *h) 
@@ -86,7 +84,7 @@ int main(int argc, char **argv)
 
         /* lets start with the ether header... */
         eptr = (struct ether_header *) packet;
-
+        memset(&pParser, 0, sizeof(pParser));
         /* Do a couple of checks to see what packet type we have..*/
         if (ntohs (eptr->ether_type) == ETHERTYPE_IP)
         {

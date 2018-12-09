@@ -38,7 +38,7 @@ CPPFLAGS =
 LDFLAGS = 
 LIBS =  -lpcap   -L../lib -lipfix -L../libmisc -lmisc 
 #CCOPT = -Wall -g
-CCOPT = -Wall -g  -m32
+CCOPT = -Wall -g  ${ARCH}
 INCLS = -I. -I.. -I../lib -I../libmisc 
 CFLAGS = $(CCOPT) $(INCLS) $(DEFS)
 

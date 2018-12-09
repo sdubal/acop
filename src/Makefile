@@ -37,15 +37,16 @@ install_sh = @install_sh@
 DEFS = -DHAVE_CONFIG_H 
 CPPFLAGS = 
 LDFLAGS = 
-LIBS =    -L../lib/lib -L../lib/libmisc -lipfix -lmisc -lpcap
-CCOPT = -Wall -g -m32
+LIBS =    -L../lib/lib -I../include -L../lib/libmisc -lipfix -lmisc -lpcap
+CCOPT = -Wall -g ${ARCH}
 #CCOPT = -Wall -g 
-INCLS = -I. -I.. -I../lib -I../libmisc
+INCLS = -I. -I..  -I../include  -I../lib/lib -I../lib/libmisc
 CFLAGS = $(CCOPT) $(INCLS) $(DEFS)
 
 TARGETS = acop 
 OBJS = ac_app_handlers.o \
 	   ac_database.o \
+	   acop_data_exporter.o \
 	   acop.o
 
 CLEANFILES = $(OBJS) $(TARGETS)

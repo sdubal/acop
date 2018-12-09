@@ -15,7 +15,6 @@
 #include "../include/ac_app_defs.h"
 #include "../include/ac_app_api.h"
 
-
 acAppHandlers_t appProtoHandlers[] =
 {
     { AC_APP_ARP_INDEX, AC_APP_ARP_ID, acAppArpPktHandler},
@@ -27,6 +26,7 @@ acAppHandlers_t appProtoHandlers[] =
 };
 
 
+extern int export_peer_node_arp_data(acPeerNode_t *);
     
 /* 
  * @acAppArpPktHandler
@@ -174,6 +174,7 @@ acAppPktHandler(acPeerTblKey_t *pktInfoKey,  acAppParser_t *data)
         peerNode = acPeerTblEntryFind(pktInfoKey);
         if (peerNode == NULL) {
             peerNode = acPeerTblEntryCreate(pktInfoKey);
+            export_peer_node_arp_data(peerNode);
         }
 
         if (peerNode) {

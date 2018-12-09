@@ -6,6 +6,7 @@
 SHELL = /bin/sh
 top_srcdir = .
 prefix = /usr/local
+ARCH=m64
 
 SUBDIRS       = lib src
 
