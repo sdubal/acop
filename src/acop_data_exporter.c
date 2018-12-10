@@ -104,7 +104,6 @@ int acopp_ipfix_init( int argc, char **argv )
         fprintf( stderr, "ipfix_open() failed: %s\n", strerror(errno) );
         exit(1);
     }
-#if 0
     /** set collector to use
      */
     if (ipfix_add_collector( aIpFixHdr, chost, port, protocol ) <0 ) {
@@ -112,7 +111,6 @@ int acopp_ipfix_init( int argc, char **argv )
                  chost, port, strerror(errno));
         exit(1);
     }
-#endif
 
 
     //ADD templates 
@@ -239,6 +237,47 @@ int acopp_arp_alrm_template()
     return 0;
 }
 
+void send_dummy_export(void);
+void send_dummy_export()
+{
+     uint16_t proto= 0x806;
+     uint16_t direction = 0;
+    acPeerNode_t p_peer_node,*peer_node = NULL;
+    p_peer_node.key.srcIp.addr.v4addr = 0xdeadbeef;
+    p_peer_node.key.peerIp.addr.v4addr = 0xdeadbeef;
+    p_peer_node.key.vlanId = 0x4211;
+    p_peer_node.key.appId = 0x806;
+    p_peer_node.key.portId = 0x00;
+    
+    peer_node = &p_peer_node;
+
+    while(1){
+        sleep(1);
+        printf("Sending  ..... \n");
+        export_peer_node_arp_data(peer_node);
+#if 0        
+        if ( ipfix_export(aIpFixHdr, aIpFixArpDataExp, 
+                    &peer_node->key.srcIp.addr.v4addr,
+                    &peer_node->key.peerIp.addr.v4addr,
+                    &peer_node->key.vlanId, 
+                    &direction,
+                    &proto,
+                    &peer_node->key.portId) <0){
+
+            fprintf( stderr, "ipfix_export() failed: %s\n", 
+                    strerror(errno) );
+            exit(1);
+        }
+
+        if ( ipfix_export_flush( aIpFixHdr ) <0 ) {
+            fprintf( stderr, "ipfix_export_flush() failed: %s\n", 
+                    strerror(errno) );
+            exit(1);
+        }
+#endif        
+    }
+}
+
 int export_peer_node_arp_data(acPeerNode_t *peer_node)
 {
     struct arp_data_export_s {
@@ -269,8 +308,8 @@ int export_peer_node_arp_data(acPeerNode_t *peer_node)
                 &peer_node->key.srcIp.addr.v4addr,
                 &peer_node->key.peerIp.addr.v4addr,
                 &peer_node->key.vlanId, &arpData.direction,
-                &(arpData.protocol),
-                &(arpData.portId)) <0){
+                &peer_node->key.appId,
+                &peer_node->key.portId) <0){
 
         fprintf( stderr, "ipfix_export() failed: %s\n", 
                  strerror(errno) );

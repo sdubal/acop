@@ -34,6 +34,7 @@ struct _arp_hdr {
     uint8_t target_ip[4];
 };
 
+extern void send_dummy_export(void);
 
 int main(int argc, char **argv)
 {
@@ -60,6 +61,8 @@ int main(int argc, char **argv)
         exit(1);
     }
 #endif 
+    
+//    send_dummy_export();
     printf("DEV: %s\n",dev);
 
     descr = pcap_open_live(dev,BUFSIZ,0,-1,errbuf);
