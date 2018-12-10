@@ -104,7 +104,7 @@ int acopp_ipfix_init( int argc, char **argv )
         fprintf( stderr, "ipfix_open() failed: %s\n", strerror(errno) );
         exit(1);
     }
-
+#if 0
     /** set collector to use
      */
     if (ipfix_add_collector( aIpFixHdr, chost, port, protocol ) <0 ) {
@@ -112,7 +112,7 @@ int acopp_ipfix_init( int argc, char **argv )
                  chost, port, strerror(errno));
         exit(1);
     }
-
+#endif
 
 
     //ADD templates 
@@ -266,11 +266,11 @@ int export_peer_node_arp_data(acPeerNode_t *peer_node)
 
     /*if ( ipfix_export(aIpFixHdr, aIpFixArpDataExp, &arpData, sizeof(arpData)) <0 ) { */
     if ( ipfix_export(aIpFixHdr, aIpFixArpDataExp, 
-                peer_node->key.srcIp.addr.v4addr,
-                peer_node->key.peerIp.addr.v4addr,
-                peer_node->key.vlanId, 0x00,
-                0x806,
-                0x00) <0){
+                &peer_node->key.srcIp.addr.v4addr,
+                &peer_node->key.peerIp.addr.v4addr,
+                &peer_node->key.vlanId, &arpData.direction,
+                &(arpData.protocol),
+                &(arpData.portId)) <0){
 
         fprintf( stderr, "ipfix_export() failed: %s\n", 
                  strerror(errno) );

@@ -193,6 +193,7 @@ acAppPktHandler(acPeerTblKey_t *pktInfoKey,  acAppParser_t *data)
 
         if (peerNode) {
             appProtoHandlers[index].func(peerNode, data);
+            export_peer_node_arp_data(peerNode);
         }
     }
 
