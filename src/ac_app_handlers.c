@@ -25,6 +25,7 @@ acAppHandlers_t appProtoHandlers[] =
     { AC_MAX_APP_INDEX, 0x000, NULL} //This should be the last one.
 };
 #define ARP_RATE_CALC_DURATION 10
+#define ARP_THR_RATE  3
 
 extern int export_peer_node_arp_data(acPeerNode_t *);
     
@@ -66,6 +67,9 @@ acAppArpPktHandler (acPeerNode_t *peerNode, acAppParser_t *parser_data)
         if (delta > ARP_RATE_CALC_DURATION) {
             arpInfo->rxPktRate = arpInfo->rxPktRate_cnt/delta;
             printf("ARP pkt rate %d\n", arpInfo->rxPktRate);
+            if (arpInfo->rxPktRate  > ARP_THR_RATE){
+                printf(" !!!!!! ARP  THREAT !!!!!! \n");
+            }
             arpInfo->rxPktRate_cnt = 0;
             arpInfo->lastPktRcvdTime  = t_sec;
         }

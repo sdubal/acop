@@ -20,21 +20,75 @@ extern acReturn_t
 acAppPktHandler(acPeerTblKey_t *pktInfoKey,  acAppParser_t *data);
 char dev[20]; 
 extern int acopp_ipfix_init(int, char **);
+extern void send_dummy_export(void);
+
+void hexDump (char *desc, void *addr, int len) 
+{
+    int i;
+    unsigned char buff[17];
+    unsigned char *pc = (unsigned char*)addr;
+
+    // Output description if given.
+    if (desc != NULL){
+        printf ("%s:\n", desc);
+    }
+
+    if (len == 0) {
+        printf("  ZERO LENGTH\n");
+        return;
+    }
+    if (len < 0) {
+        printf("  NEGATIVE LENGTH: %i\n",len);
+        return;
+    }
+
+    // Process every byte in the data.
+    for (i = 0; i < len; i++) {
+        // Multiple of 16 means new line (with line offset).
+
+        if ((i % 16) == 0) {
+            // Just don't print ASCII for the zeroth line.
+            if (i != 0)
+                printf ("  %s\n", buff);
+
+            // Output the offset.
+            printf ("  %04x ", i);
+        }
+
+        // Now the hex code for the specific character.
+        printf (" %02x", pc[i]);
+
+        // And store a printable ASCII character for later.
+        if ((pc[i] < 0x20) || (pc[i] > 0x7e))
+            buff[i % 16] = '.';
+        else
+            buff[i % 16] = pc[i];
+        buff[(i % 16) + 1] = '\0';
+    }
+
+    // Pad out last line if not exactly 16 characters.
+    while ((i % 16) != 0) {
+        printf ("   ");
+        i++;
+    }
+}
+
 
 typedef struct _arp_hdr arp_hdr;
-struct _arp_hdr {
+struct __attribute__((__packed__)) _arp_hdr {
     uint16_t htype;
-    uint16_t ptype;
+    uint16_t ar_pro;
     uint8_t hlen;
     uint8_t plen;
-    uint16_t opcode;
+    uint16_t ar_op;
+#if 0
     uint8_t sender_mac[6];
     uint8_t sender_ip[4];
     uint8_t target_mac[6];
     uint8_t target_ip[4];
+#endif     
 };
 
-extern void send_dummy_export(void);
 
 int main(int argc, char **argv)
 {
@@ -46,7 +100,7 @@ int main(int argc, char **argv)
     struct pcap_pkthdr hdr;     /* pcap.h */
     struct ether_header *eptr;  /* net/ethernet.h */
     acAppParser_t pParser;
-
+    arp_hdr *arp = NULL;
     u_char *ptr; /* printing out hardware header info */
 
     /* grab a device to peak into... */
@@ -100,7 +154,10 @@ int main(int argc, char **argv)
         printf("Recieved at ..... %s\n",ctime((const time_t*)&hdr.ts.tv_sec)); 
 
         /* lets start with the ether header... */
-        eptr = (struct ether_header *) packet;
+        /* ASIC hdr  processing */
+
+        packet = packet+20;
+
         memset((void *)&pParser, 0, sizeof(pParser));
         if (hdr.len < 14){
             printf("Low len packet\n");
@@ -132,10 +189,13 @@ int main(int argc, char **argv)
             printf("%s%x",(i == ETHER_ADDR_LEN) ? " " : ":",*ptr++);
         }while(--i>0);
         printf("\n");
+        
+        /* Skip 4 bytes of Platform Header */
+         packet = packet + 4;
 
         /* Fetch outer vlan from ASIC header*/
          /* Skip all vlan tags */
-          pParser.key.vlanId = 0x00; /* This needs to be fetched from ASIC hdr */
+        pParser.key.vlanId = 0x00; /* This needs to be fetched from ASIC hdr */
         type =  ntohs(*(uint16_t *) packet);   
         printf("Ethernet type hex:%x \n", type);
         pParser.key.portId = 0x00;
@@ -149,20 +209,47 @@ int main(int argc, char **argv)
         }
             pParser.pktSz = hdr.len;
 
-        switch(type){
+        hexDump("ARP packet", packet, sizeof(arp_hdr)+2);
+        switch (type){
             case ETHERTYPE_ARP:
                 printf("Packet is ARP\n");
                 pParser.key.appId = type;
                 packet = packet +  2;  /* skip ETHER_TYPE */
-                arp_hdr * arp = (arp_hdr *) packet;
-                if (ntohs(arp->ptype) == ETH_P_IP){
+
+                arp = (arp_hdr *) packet;
+                packet = packet + sizeof(arp_hdr);
+                if (ntohs(arp->ar_pro) == ETH_P_IP){
                     printf("Packet is IPv4 ARP opcpode %d\n", 
-                            ntohs(arp->opcode));
+                            ntohs(arp->ar_op));
+                    /* Skip mac */
+                    packet = packet + 6;
                     pParser.key.srcIp.type = 2;
-                    pParser.key.srcIp.addr.v4addr = (uint32_t) arp->sender_ip;
+                    pParser.key.srcIp.addr.v4addr = * (uint32_t*)packet;
+                    packet = packet + 4;
+                    packet = packet + 6;
+                    printf("sender ip %x\n", pParser.key.srcIp.addr.v4addr);
                     pParser.key.peerIp.type = 2;
-                    pParser.key.peerIp.addr.v4addr =  (uint32_t) arp->target_ip;
-                }
+                    pParser.key.peerIp.addr.v4addr =  *(uint32_t *)packet;
+                    printf("sender ip %x\n", pParser.key.peerIp.addr.v4addr);
+
+                    i = 4;
+                    ptr = &pParser.key.peerIp.addr.v4addr;
+                    printf(" Destination IP Address:  ");
+                    do{
+                        printf("%s%d",(i == 4) ? " " : ".",*ptr++);
+                    }while(--i>0);
+                    printf("\n");
+
+                    ptr =&pParser.key.srcIp.addr.v4addr;
+                    i = 4;
+                    printf(" Source Address:  ");
+                    do{
+                        printf("%s%d",(i == 4 ) ? " " : ".",*ptr++);
+                    }while(--i>0);
+                    printf("\n");
+
+               }
+
 
                 if (acAppPktHandler(&pParser.key, &pParser)){
                     printf("DB insert failed\n");
@@ -195,7 +282,6 @@ int main(int argc, char **argv)
             printf("Ethernet type hex:%x dec:%d is an ARP packet\n",
                     type, type);
             /* Parse ARP info */
-            
         }
 #if 0
    #endif        
